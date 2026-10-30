@@ -4,7 +4,7 @@ version = "1.0.0"
 description = "PaddleOCR Standalone — RapidOCR + ONNX Runtime, CPU-only"
 requires-python = ">=3.10"
 dependencies = [
-    "rapidocr-onnxruntime>=3.3.0",
+    "rapidocr-onnxruntime>=1.4.0",
     "fastapi>=0.111.0",
     "uvicorn[standard]>=0.29.0",
     "python-multipart>=0.0.6",
@@ -16,10 +16,8 @@ dev = [
     "pyinstaller>=6.21.0",
 ]
 
-[tool.pyinstaller]
-# PyInstaller spec 在 paddle-ocr.spec，通过 Makefile 调用
-# uv run pyinstaller paddle-ocr.spec
-
 [tool.uv]
 # 让 uv 管理虚拟环境（默认 .venv）
 # uv sync / uv run 可一键还原环境并执行
+# PyInstaller 打包入口在 paddle-ocr.spec，通过 Makefile 调用：
+#   make package   ->  uv run pyinstaller paddle-ocr.spec
