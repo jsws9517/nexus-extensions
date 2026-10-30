@@ -1,4 +1,9 @@
-.venv/  
-__pycache__/  
-*.pyc  
-.nexus/ 
+.venv/
+__pycache__/
+*.pyc
+.nexus/
+
+# exe-line local build artifacts (do not belong to docker line)
+build/
+dist/
+upx.exe
