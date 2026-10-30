@@ -1,3 +1,0 @@
-# paddle-ocr 独立 CLI（ocr.py）的核心依赖：
-# RapidOCR 主包（ONNX Runtime 引擎，PP-OCRv6），打包为 paddle-ocr.exe
-rapidocr>=3.9.2
