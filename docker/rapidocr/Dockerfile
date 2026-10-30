@@ -18,13 +18,21 @@ RUN apt-get update \
         curl ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
+# 国内 pip 镜像源 (仅 build 期, 不写入运行时 ENV, 避免污染镜像)
+# 境外 pypi.org 在弱网下速率极低 (实测装依赖 ~40min), 换阿里源走 CDN, 通常 <2min
+# 用 ARG 而非 ENV: 只在 build 时用, 不烧进镜像
+ARG PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple/
+ENV PIP_INDEX_URL=${PIP_INDEX_URL} \
+    PIP_TRUSTED_HOST=mirrors.aliyun.com
+
 # 安装 ONNX Runtime 推理栈 + Web 服务栈
 # 不装 PaddlePaddle, 保持镜像轻量 (~350MB)
 # 关键: rapidocr-onnxruntime 的 setup 会拉非 headless 版 opencv-python (依赖 libGL),
 # 在 python:3.12-slim-bookworm 里 import cv2 会崩在 native .so 加载。装完强制卸掉非
 # headless 版, 只留 requirements 里声明的 opencv-python-headless (不链 GUI 库)。
 COPY requirements-rapidocr-docker.txt /tmp/requirements-rapidocr-docker.txt
-# 装完 rapidocr-onnxruntime 后, 强制清掉非 headless 的 opencv-python (它链 libGL/libxcb,
+# 装完 rapidocr-onnxruntime 后, 强制清掉非 headless 的 opencv-python
+# (走上面设好的 PIP_INDEX_URL=阿里源, 不再 pypi.org) (它链 libGL/libxcb,
 # 在 slim 镜像 import cv2 会崩), 用 --force-reinstall 确保 headless 版的 cv2 目录最后写、
 # 压制残留; 再显式卸载非 headless 包防止 pip 依赖解析把它拉回来。
 RUN pip install --no-cache-dir \
