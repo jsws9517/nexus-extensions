@@ -1,18 +1,11 @@
 # ============================================================
 # 根目录 .dockerignore (供 docker/rapidocr/Dockerfile 使用,
 # build context = 项目根, 所以 ignore 规则放在根目录)
-# 原则: 只放行 RapidOCR 镜像构建必需的 5 个文件, 其余全部 ignore
+#
+# 语法说明: .dockerignore 的每一行都是"排除规则",
+# 要保留的文件不用列 (默认全部发送进 build context),
+# 只有"不需要的"才显式排除。用 ! 前缀可再放行被误排的文件。
 # ============================================================
-
-# ---- 放行 (RapidOCR 镜像构建必需) ----
-.dockerignore
-.gitignore
-app_rapidocr.py
-entrypoint-rapidocr.sh
-requirements-rapidocr-docker.txt
-docker/rapidocr/Dockerfile
-docker/rapidocr/docker-compose.yml
-docker/rapidocr/README.md
 
 # ---- 排除: Paddle 版文件 (RapidOCR 镜像不需要, 防止混淆) ----
 app_paddle_mobile.py
