@@ -20,9 +20,14 @@ RUN apt-get update \
 
 # 安装 ONNX Runtime 推理栈 + Web 服务栈
 # 不装 PaddlePaddle, 保持镜像轻量 (~350MB)
+# 关键: rapidocr-onnxruntime 的 setup 会拉非 headless 版 opencv-python (依赖 libGL),
+# 在 python:3.12-slim-bookworm 里 import cv2 会崩在 native .so 加载。装完强制卸掉非
+# headless 版, 只留 requirements 里声明的 opencv-python-headless (不链 GUI 库)。
 COPY requirements-rapidocr-docker.txt /tmp/requirements-rapidocr-docker.txt
 RUN pip install --no-cache-dir \
         -r /tmp/requirements-rapidocr-docker.txt \
+    && pip uninstall -y opencv-python 2>/dev/null || true \
+    && pip install --no-cache-dir opencv-python-headless \
     && rm /tmp/requirements-rapidocr-docker.txt
 
 # ------------------------------------------------------------------
