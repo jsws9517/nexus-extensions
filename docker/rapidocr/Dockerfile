@@ -24,10 +24,15 @@ RUN apt-get update \
 # 在 python:3.12-slim-bookworm 里 import cv2 会崩在 native .so 加载。装完强制卸掉非
 # headless 版, 只留 requirements 里声明的 opencv-python-headless (不链 GUI 库)。
 COPY requirements-rapidocr-docker.txt /tmp/requirements-rapidocr-docker.txt
+# 装完 rapidocr-onnxruntime 后, 强制清掉非 headless 的 opencv-python (它链 libGL/libxcb,
+# 在 slim 镜像 import cv2 会崩), 用 --force-reinstall 确保 headless 版的 cv2 目录最后写、
+# 压制残留; 再显式卸载非 headless 包防止 pip 依赖解析把它拉回来。
 RUN pip install --no-cache-dir \
         -r /tmp/requirements-rapidocr-docker.txt \
-    && pip uninstall -y opencv-python 2>/dev/null || true \
-    && pip install --no-cache-dir opencv-python-headless \
+    && pip uninstall -y opencv-python || true \
+    && rm -rf /usr/local/lib/python3.12/site-packages/cv2* \
+    && pip install --no-cache-dir --force-reinstall opencv-python-headless \
+    && python -c "import cv2; print('cv2 headless OK', cv2.__version__)" \
     && rm /tmp/requirements-rapidocr-docker.txt
 
 # ------------------------------------------------------------------
