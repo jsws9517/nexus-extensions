@@ -1,4 +1,26 @@
-.venv/  
-__pycache__/  
-*.pyc  
-.nexus/trash/ 
+# Virtual envs
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# PyInstaller build artifacts
+build/
+dist/
+
+# Release packages
+paddle-ocr.zip
+*.zip
+
+# UPX binary
+upx.exe
+
+# Nexus agent workspace
+.nexus/trash/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

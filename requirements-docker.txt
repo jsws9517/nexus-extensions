@@ -1,0 +1,6 @@
+# PaddleOCR Mobile 服务栈依赖 (Web 层)
+# 推理依赖 paddlepaddle / paddleocr 在 Dockerfile 里单独安装
+fastapi>=0.111.0
+uvicorn[standard]>=0.29.0
+python-multipart>=0.0.6
+pillow>=10.0.0

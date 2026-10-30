@@ -1,0 +1,79 @@
+# Paddle OCR Server v2 (CPU Optimized)
+# 轻量级PP-OCRv4模型，专为CPU推理优化
+
+# 服务配置
+host: 127.0.0.1
+port: 8002
+model_name: paddle-ocr-v2
+
+# CPU优化配置
+cpu:
+  # 推理线程数（建议设为物理核心数）
+  threads: 4
+  
+  # ONNX推理优化
+  onnx:
+    enabled: true
+    inter_op_threads: 2
+    intra_op_threads: 4
+  
+  # 内存限制（MB）
+  max_memory: 1024
+
+# 模型配置（PP-OCRv4 轻量级）
+model:
+  # 语言（支持中英文）
+  lang: ch
+  
+  # 检测模型（CPU轻量版）
+  det_model:
+    path: ppocrv4_det_infer.onnx
+    score_threshold: 0.3
+  
+  # 识别模型（CPU轻量版）
+  rec_model:
+    path: ppocrv4_rec_infer.onnx
+    score_threshold: 0.5
+  
+  # 方向分类器（可选，中文场景推荐开启）
+  cls_model:
+    enabled: true
+    path: ppocrv4_cls_infer.onnx
+    angle_threshold: 180
+
+# 推理优化
+inference:
+  # 图片预处理
+  preprocess:
+    resize_to: [960, 960]  # 最大边长
+    keep_ratio: true
+    pad_to_square: false
+  
+  # 后处理
+  postprocess:
+    box_type: poly  # 多边形框（支持倾斜文字）
+    merge_threshold: 0.3
+  
+  # 批量处理（无GPU时建议设为1）
+  batch_size: 1
+  
+  # 缓存优化
+  cache:
+    enabled: true
+    max_size: 5  # 最多缓存5张图片
+
+# 输出配置
+output:
+  # 返回完整结果还是仅文本
+  full_result: false
+  
+  # 置信度过滤阈值
+  confidence_threshold: 0.5
+  
+  # 是否返回边界框坐标
+  return_boxes: true
+
+# 日志配置
+logging:
+  level: INFO
+  format: "%(asctime)s - %(levelname)s - %(message)s"
