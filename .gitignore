@@ -12,11 +12,15 @@ dist/
 paddle-ocr.zip
 *.zip
 
+# PyInstaller transient outputs
+*.manifest
+*.wxc
+
 # UPX binary
 upx.exe
 
 # Nexus agent workspace
-.nexus/trash/
+.nexus/
 
 # OS
 .DS_Store

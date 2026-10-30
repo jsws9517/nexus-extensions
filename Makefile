@@ -17,14 +17,14 @@ sync: ## 同步 uv 虚拟环境与依赖（快速还原环境）
 package: ## 打包 exe（console 版，默认 spec）
 	uv run pyinstaller --noconfirm paddle-ocr.spec
 
-package-upx: package ## 打包并 UPX 压缩（若 upx 在 PATH 中）
-	@if command -v upx >/dev/null 2>&1; then upx dist/paddle-ocr/paddle-ocr.exe; else echo "upx not found, skipping"; fi
+package-upx: package ## 打包并 UPX 压缩（onefile，--force 绕过 GUARD_CF；若 upx 在 PATH 中）
+	@if command -v upx >/dev/null 2>&1; then upx --force dist/paddle-ocr.exe; else echo "upx not found, skipping"; fi
 
 release: package-upx zip ## 一键 打包+压缩+打 zip
 	@echo "Release ready: $(shell ls -la paddle-ocr.zip 2>/dev/null || echo paddle-ocr.zip)"
 
-zip: ## 把 dist 打成 paddle-ocr.zip
-	cd dist && zip -r ../paddle-ocr.zip paddle-ocr/
+zip: ## 把 dist 的 exe 打成 paddle-ocr.zip（onefile 单文件）
+	powershell -NoProfile -Command "Compress-Archive -Path dist/paddle-ocr.exe -DestinationPath paddle-ocr.zip -Force"
 
 clean: ## 清理 build / dist / zip 产物
 	rm -rf build dist paddle-ocr.zip
