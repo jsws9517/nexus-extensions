@@ -33,9 +33,29 @@
 # 在项目根执行 (build context 为项目根)
 docker compose -f docker/rapidocr/docker-compose.yml up -d --build
 
+# 仅重建镜像 (app 代码 / Dockerfile 改了才需要; 只改端口等编排用 up -d)
+docker compose -f docker/rapidocr/docker-compose.yml build
+
 # 自定义端口 (例: 9001)
 RAPID_PORT=9001 docker compose -f docker/rapidocr/docker-compose.yml up -d
 ```
+
+### build 环境变量（非必需，排障时才用）
+
+> **`COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=0` 不是必需的**，默认 compose v2 已走 BuildKit。
+> 仅当 `docker compose build` 报**版本不兼容**（`BuildKit is required` / `no such constraint` 之类）时再前置：
+>
+> ```bash
+> COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=0 \
+>   docker compose -f docker/rapidocr/docker-compose.yml build
+> ```
+
+### build 时的 pip 源（mirror）
+
+`Dockerfile` 的 `RUN pip install` 已**默认走阿里云源**（`-i https://mirrors.aliyun.com/pypi/simple/`），build 自动生效、**无需传参**；国内网络速度由它保证。
+
+- 换源 / 切官方源：改 `Dockerfile` 那行 `-i` 后重建；或 `--build-arg PIP_INDEX_URL=...`（需 Dockerfile 声明 `ARG PIP_INDEX_URL`，当前未声明）。
+- 走 compose 时传 `build.args`（见 `docker-compose.yml` `build` 段）；CLI `docker build --build-arg K=V` 需手动 build 并打 tag。
 
 ## 接口（OpenAI 兼容）
 
@@ -63,6 +83,37 @@ curl -s http://127.0.0.1:8006/v1/chat/completions \
     ]
   }'
 ```
+
+## 运行状态测试样例（真实 OCR 闭环）
+
+build + 容器 `up` + `healthz` OK 之后，用下面这条做**真实推理端到端验证**（大图 base64 走文件喂，避开 ARG_MAX）：
+
+```bash
+curl http://127.0.0.1:8006/healthz
+# 期望: {"status":"ok","model":"rapidocr-lite",...,"engine":"RapidOCR",...}
+
+cd /sf_linux
+B64=$(base64 -w0 test.jpg)        # 注意 $(base64 ...), 不是 $9base64
+cat > /tmp/ocr_req.json <<EOF
+{"model":"rapidocr-lite","messages":[{"role":"user","content":[{"type":"image_url","image_url":{"url":"data:image/jpeg;base64,${B64}"}},{"type":"text","text":"识别图中文字"}]}]}
+EOF
+curl -s -X POST http://127.0.0.1:8006/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d @/tmp/ocr_req.json
+```
+
+**期望**：`choices[0].message.content` 有识别文字串 + `finish_reason: "stop"`，`metadata.processing_time_ms` ~3000ms 量级（CPU）。
+
+## 踩坑排障（本线实际踩过）
+
+| 症状 | 根因 | 修复 |
+|---|---|---|
+| 容器 `Restarting`，日志 `ImportError: libGL.so.1` / cv2 import 崩 | opencv headless 与系统 cv2 残留混装 | `force-reinstall opencv-python-headless` + 删残留 + 构建期自检（`922fd5e`） |
+| build 极慢 / pip 卡住 | 走官方 PyPI 国内慢 | pip 切阿里云源，已写死 Dockerfile（`8618251`） |
+| `curl -d "..."` 报 `参数列表过长` | 大图 base64 进 argv 超 `ARG_MAX` | 写临时 JSON 再 `curl -d @file` |
+| `/v1/...` 返回 500，日志 `ValueError: too many values to unpack (expected 2)` | RapidOCR 2.x 返回 3 元组，旧代码按 2 元组解包 | 版本兼容解包（`7495365`） |
+
+**排障口诀**：① 反复 `Restarting` → `sudo docker logs rapidocr-mobile 2>&1 | tail -40` 看末行 traceback；② `healthz` 绿但 `/v1/...` 500 → health 只探活、500 必是推理路径崩，看日志 `app_rapidocr.py` 行号；③ 怀疑请求体 → `head -c 80 /tmp/ocr_req.json` 看 `base64,` 后是否为空（B64 没展开 ≠ 容器 500）。
 
 ## 资源说明
 
