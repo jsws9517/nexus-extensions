@@ -90,13 +90,24 @@ class OCREngine:
         result, elapse = self._engine(img_bgr)
         elapsed_ms = round((time.time() - t0) * 1000)
         
-        # 解析结果
+        # 解析结果 (兼容 rapidocr 新旧版返回结构:
+        #   新版: [box, text, conf] 每项 3 元组
+        #   老版: [box, (text, conf)] 每项 2 元、第二项是 (text, conf) tuple)
         texts = []
         if result:
-            for box, (text, conf) in result:
+            for item in result:
+                box = item[0]
+                if len(item) >= 3:
+                    text, conf = item[1], item[2]
+                else:
+                    # 老版: item[1] 是 (text, conf) tuple
+                    text, conf = item[1][0], item[1][1]
+                # conf 可能被包成 (conf,) 或已是 float, 统一取标量
+                if isinstance(conf, (list, tuple)):
+                    conf = conf[0] if conf else 0.0
                 texts.append({
                     "text": text,
-                    "confidence": round(conf, 4),
+                    "confidence": round(float(conf), 4),
                     "box": box
                 })
         
